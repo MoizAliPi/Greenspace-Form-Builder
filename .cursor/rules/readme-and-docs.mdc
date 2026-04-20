@@ -1,0 +1,201 @@
+---
+description: README structure, inline docstring style, and documentation conventions for the form builder project
+globs: ["**/README.md", "**/*.py", "**/*.ts", "**/*.tsx"]
+alwaysApply: false
+---
+
+# README & Docs Conventions — Form Builder
+
+## README Structure
+
+The root README follows this exact structure. Every section must be present.
+
+```markdown
+# Form Builder
+
+A Typeform-style form builder built with Next.js + TypeScript (frontend) and FastAPI + Python (backend), backed by PostgreSQL.
+
+## Why This Stack
+
+Brief paragraph (3–5 sentences) explaining the deliberate architectural choices:
+- Why FastAPI over Node/Express (Pydantic type safety, async-first, auto Swagger docs, Python is natural for future ML features)
+- Why Next.js App Router (React Query integration, server/client component split, Vercel-ready)
+- Why JSONB for field config (schema flexibility without migrations)
+
+## Features
+
+- [ ] Drag-and-drop form builder with reorderable fields
+- [ ] Field types: text, email, number, textarea, select, radio
+- [ ] Public form view for respondents
+- [ ] Response collection and dashboard
+- [ ] Auto-generated API docs at `/docs`
+
+## Data Model
+
+Include a table or schema summary here — not just code, but a brief explanation of the key decision:
+
+| Table         | Purpose                                      |
+|---------------|----------------------------------------------|
+| `forms`       | Form metadata (title, published status)      |
+| `fields`      | Ordered fields with JSONB config per type    |
+| `responses`   | One row per form submission                  |
+| `field_answers` | One row per field answer, JSONB value      |
+
+Key decision: `fields.config` and `field_answers.value` use JSONB to support arbitrary field types without schema changes.
+
+## Local Setup
+
+### Prerequisites
+- Node.js 20+
+- Python 3.12+
+- PostgreSQL (or use the Supabase connection string from `.env`)
+
+### Backend
+
+\`\`\`bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env        # fill in DATABASE_URL
+uvicorn app.main:app --reload --port 8000
+\`\`\`
+
+API docs: http://localhost:8000/docs
+
+### Frontend
+
+\`\`\`bash
+cd frontend
+npm install
+cp .env.local.example .env.local   # set NEXT_PUBLIC_API_URL
+npm run dev
+\`\`\`
+
+App: http://localhost:3000
+
+### Run Tests
+
+\`\`\`bash
+cd backend
+pytest tests/ -v
+\`\`\`
+
+## Project Structure
+
+\`\`\`
+form-builder/
+├── backend/          # FastAPI + SQLAlchemy
+│   ├── app/
+│   │   ├── routers/  # HTTP route handlers
+│   │   ├── services/ # Business logic
+│   │   ├── models/   # SQLAlchemy ORM models
+│   │   └── schemas/  # Pydantic request/response models
+│   └── tests/
+└── frontend/         # Next.js App Router + React Query
+    ├── app/          # Pages (App Router)
+    ├── components/   # UI components
+    ├── hooks/        # React Query hooks
+    └── lib/          # API client + types
+\`\`\`
+
+## AI Workflow
+
+This project was built using an AI-assisted workflow:
+- **Cursor + Claude** for scaffolding routers, models, and component structure
+- **Reviewed all AI output** before committing — caught [specific example] where the AI generated synchronous SQLAlchemy queries that would fail in an async context
+- **Wrote business logic and data model decisions myself** — the JSONB schema, the full-replace field update pattern, and the Pydantic schema design were authored directly
+
+## What I'd Do Next
+
+Given more time, I'd prioritize:
+
+1. **Field validation rules** — min/max length on text fields, regex patterns, stored in `fields.config` without schema changes
+2. **Conditional field logic** — show/hide fields based on prior answers, modeled as `conditions: [{field_id, operator, value}]` in config
+3. **Auth + workspaces** — add a `workspaces` table and `workspace_id` FK on forms for multi-tenant support
+4. **Response analytics** — aggregate views per field type (distribution charts for select/radio, averages for number fields)
+
+## Environment Variables
+
+\`\`\`bash
+# backend/.env.example
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/formbuilder
+CORS_ORIGINS=["http://localhost:3000"]
+
+# frontend/.env.local.example
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+\`\`\`
+```
+
+---
+
+## Python Docstring Style
+
+Use Google-style docstrings. Only document non-obvious functions — don't add docstrings to trivial getters.
+
+```python
+async def update_form(db: AsyncSession, form_id: uuid.UUID, payload: FormUpdate) -> Form | None:
+    """Update a form's metadata and replace its fields.
+
+    Performs a full replace of the fields collection: existing fields not
+    present in `payload.fields` are deleted. Fields with an `id` are updated
+    in place; fields without an `id` are created as new.
+
+    Args:
+        db: Async SQLAlchemy session.
+        form_id: UUID of the form to update.
+        payload: Fields to update. Only non-None values are applied.
+
+    Returns:
+        The updated Form with fields eagerly loaded, or None if not found.
+    """
+```
+
+---
+
+## TypeScript JSDoc Style
+
+Only document exported functions and hooks. Don't document component props (the TypeScript interface is sufficient).
+
+```typescript
+/**
+ * React Query hook for fetching a form by ID with all fields.
+ * Returns stale data while refetching — no loading flash on revisit.
+ */
+export function useForm(id: string) { ... }
+
+/**
+ * Mutation hook for saving form changes.
+ * Optimistically updates the cache on success.
+ */
+export function useUpdateForm(id: string) { ... }
+```
+
+---
+
+## Inline Comment Rules
+
+- Comment the *why*, not the *what*.
+- Delete comments that restate the code.
+
+```python
+# Correct — explains why
+# Full replace: simpler than diffing field arrays and handles reordering correctly
+await db.execute(delete(Field).where(Field.form_id == form_id))
+
+# Wrong — restates the code
+# Delete all fields for this form
+await db.execute(delete(Field).where(Field.form_id == form_id))
+```
+
+---
+
+## Git Commit Style
+
+```
+feat: add drag-and-drop field reordering
+fix: prevent 500 when submitting to unpublished form
+chore: add aiosqlite to test dependencies
+docs: add data model table to README
+```
+
+Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`. One line, imperative mood, no period.

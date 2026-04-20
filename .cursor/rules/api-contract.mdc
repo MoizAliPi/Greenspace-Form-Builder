@@ -1,0 +1,366 @@
+---
+description: Exact API contract between Next.js frontend and FastAPI backend — request/response shapes for all routes
+globs: ["**/lib/api*.ts", "**/api/**/*.ts", "**/routers/**/*.py", "**/schemas/**/*.py"]
+alwaysApply: false
+---
+
+# API Contract — Form Builder
+
+## Base URL
+
+```
+Development:  http://localhost:8000/api/v1
+Production:   set via NEXT_PUBLIC_API_URL env var
+```
+
+All routes are prefixed with `/api/v1`. All request/response bodies are `application/json`. All IDs are UUIDs.
+
+---
+
+## Error Response Shape
+
+All errors follow this shape. Never return plain strings or unstructured error bodies.
+
+```json
+{
+  "detail": "Human-readable error message",
+  "code": "MACHINE_READABLE_CODE"
+}
+```
+
+HTTP status conventions:
+- `400` — validation error or bad input
+- `404` — resource not found
+- `422` — Pydantic validation failure (FastAPI default, keep as-is)
+- `500` — unhandled server error
+
+---
+
+## Routes
+
+### `POST /api/v1/forms`
+Create a new form.
+
+**Request body:**
+```json
+{
+  "title": "Customer Feedback",
+  "description": "Optional description"
+}
+```
+
+**Response `201`:**
+```json
+{
+  "id": "uuid",
+  "title": "Customer Feedback",
+  "description": "Optional description",
+  "is_published": false,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z",
+  "fields": []
+}
+```
+
+---
+
+### `GET /api/v1/forms/:id`
+Fetch a form with all its fields (ordered by position).
+
+**Response `200`:**
+```json
+{
+  "id": "uuid",
+  "title": "Customer Feedback",
+  "description": null,
+  "is_published": false,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z",
+  "fields": [
+    {
+      "id": "uuid",
+      "type": "text",
+      "label": "Your name",
+      "placeholder": "Enter your name",
+      "required": true,
+      "position": 0,
+      "config": {}
+    },
+    {
+      "id": "uuid",
+      "type": "select",
+      "label": "How did you hear about us?",
+      "placeholder": null,
+      "required": false,
+      "position": 1,
+      "config": { "options": ["Google", "Friend", "Social media"] }
+    }
+  ]
+}
+```
+
+**Response `404`:**
+```json
+{ "detail": "Form not found", "code": "FORM_NOT_FOUND" }
+```
+
+---
+
+### `PUT /api/v1/forms/:id`
+Update a form's metadata and fields (full replace of fields array).
+
+This is a full replace — send the complete fields array with current positions. Backend replaces all fields for this form.
+
+**Request body:**
+```json
+{
+  "title": "Updated Title",
+  "description": "Updated description",
+  "is_published": false,
+  "fields": [
+    {
+      "id": "uuid-existing",
+      "type": "text",
+      "label": "Your name",
+      "placeholder": "Enter your name",
+      "required": true,
+      "position": 0,
+      "config": {}
+    },
+    {
+      "type": "email",
+      "label": "Your email",
+      "placeholder": null,
+      "required": true,
+      "position": 1,
+      "config": {}
+    }
+  ]
+}
+```
+
+Notes:
+- Fields with an `id` are updated in place.
+- Fields without an `id` are created as new.
+- Fields present in DB but absent from this array are deleted.
+
+**Response `200`:** Same shape as `GET /api/v1/forms/:id`
+
+---
+
+### `POST /api/v1/forms/:id/submit`
+Submit a response to a published form.
+
+**Request body:**
+```json
+{
+  "answers": [
+    { "field_id": "uuid", "value": "John Doe" },
+    { "field_id": "uuid", "value": "john@example.com" },
+    { "field_id": "uuid", "value": 42 },
+    { "field_id": "uuid", "value": "Option A" }
+  ]
+}
+```
+
+**Response `201`:**
+```json
+{
+  "id": "uuid",
+  "form_id": "uuid",
+  "submitted_at": "2024-01-01T00:00:00Z"
+}
+```
+
+**Response `400`:**
+```json
+{ "detail": "Missing required field: Your name", "code": "MISSING_REQUIRED_FIELD" }
+```
+
+---
+
+### `GET /api/v1/forms/:id/responses`
+Fetch all responses for a form, with answers joined.
+
+**Response `200`:**
+```json
+{
+  "form_id": "uuid",
+  "total": 42,
+  "responses": [
+    {
+      "id": "uuid",
+      "submitted_at": "2024-01-01T00:00:00Z",
+      "answers": [
+        { "field_id": "uuid", "field_label": "Your name", "value": "John Doe" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Pydantic Schemas (FastAPI side)
+
+```python
+# app/schemas/form.py
+import uuid
+from datetime import datetime
+from typing import Any, Optional
+from pydantic import BaseModel
+
+class FieldConfig(BaseModel):
+    model_config = {"extra": "allow"}
+
+class FieldBase(BaseModel):
+    type: str
+    label: str
+    placeholder: Optional[str] = None
+    required: bool = False
+    position: int = 0
+    config: dict[str, Any] = {}
+
+class FieldCreate(FieldBase):
+    id: Optional[uuid.UUID] = None  # present = update existing, absent = create new
+
+class FieldRead(FieldBase):
+    id: uuid.UUID
+
+class FormCreate(BaseModel):
+    title: str = "Untitled Form"
+    description: Optional[str] = None
+
+class FormUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    is_published: Optional[bool] = None
+    fields: Optional[list[FieldCreate]] = None
+
+class FormRead(BaseModel):
+    id: uuid.UUID
+    title: str
+    description: Optional[str]
+    is_published: bool
+    created_at: datetime
+    updated_at: datetime
+    fields: list[FieldRead] = []
+
+    model_config = {"from_attributes": True}
+
+class AnswerSubmit(BaseModel):
+    field_id: uuid.UUID
+    value: Any
+
+class FormSubmit(BaseModel):
+    answers: list[AnswerSubmit]
+
+class ResponseRead(BaseModel):
+    id: uuid.UUID
+    form_id: uuid.UUID
+    submitted_at: datetime
+
+class AnswerRead(BaseModel):
+    field_id: uuid.UUID
+    field_label: str
+    value: Any
+
+class ResponseDetail(BaseModel):
+    id: uuid.UUID
+    submitted_at: datetime
+    answers: list[AnswerRead]
+
+class ResponsesRead(BaseModel):
+    form_id: uuid.UUID
+    total: int
+    responses: list[ResponseDetail]
+```
+
+---
+
+## TypeScript API Client (Next.js side)
+
+All API calls go through `lib/api.ts`. Never call `fetch` directly in components or hooks.
+
+```typescript
+// lib/api.ts
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: "Unknown error" }));
+    throw new Error(error.detail ?? "Request failed");
+  }
+  return res.json();
+}
+
+export const api = {
+  forms: {
+    create: (data: { title: string; description?: string }) =>
+      request<FormRead>("/forms", { method: "POST", body: JSON.stringify(data) }),
+    get: (id: string) =>
+      request<FormRead>(`/forms/${id}`),
+    update: (id: string, data: FormUpdate) =>
+      request<FormRead>(`/forms/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    submit: (id: string, data: FormSubmit) =>
+      request<ResponseRead>(`/forms/${id}/submit`, { method: "POST", body: JSON.stringify(data) }),
+    responses: (id: string) =>
+      request<ResponsesRead>(`/forms/${id}/responses`),
+  },
+};
+```
+
+---
+
+## TypeScript Types (mirrors Pydantic schemas)
+
+```typescript
+// lib/types.ts
+export type FieldType = "text" | "email" | "number" | "textarea" | "select" | "radio";
+
+export interface Field {
+  id: string;
+  type: FieldType;
+  label: string;
+  placeholder?: string | null;
+  required: boolean;
+  position: number;
+  config: Record<string, unknown>;
+}
+
+export interface Form {
+  id: string;
+  title: string;
+  description?: string | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  fields: Field[];
+}
+
+export interface FormUpdate {
+  title?: string;
+  description?: string;
+  is_published?: boolean;
+  fields?: Partial<Field>[];
+}
+
+export interface Answer {
+  field_id: string;
+  value: string | number | string[];
+}
+
+export interface FormSubmit {
+  answers: Answer[];
+}
+
+export interface ResponseRead {
+  id: string;
+  form_id: string;
+  submitted_at: string;
+}
+```

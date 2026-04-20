@@ -34,6 +34,8 @@ flowchart LR
   API --> DB
 ```
 
+
+
 Frontend stack:
 
 - Next.js App Router
@@ -122,16 +124,18 @@ The initial builder and runtime should support these field types:
 
 Recommended internal field type IDs:
 
-| UI label | `type` value | Notes |
-|---|---|---|
-| Short text | `short_text` | Single-line text input |
-| Long text | `long_text` | Multiline textarea |
-| Email | `email` | HTML email input + backend validation |
-| Phone number | `phone_number` | Tel input + normalized validation |
-| Checkbox | `checkbox` | Single boolean checkbox |
-| Yes/No | `yes_no` | Radio group with fixed yes/no options |
-| Address | `address` | Structured object value |
+
+| UI label      | `type` value    | Notes                                     |
+| ------------- | --------------- | ----------------------------------------- |
+| Short text    | `short_text`    | Single-line text input                    |
+| Long text     | `long_text`     | Multiline textarea                        |
+| Email         | `email`         | HTML email input + backend validation     |
+| Phone number  | `phone_number`  | Tel input + normalized validation         |
+| Checkbox      | `checkbox`      | Single boolean checkbox                   |
+| Yes/No        | `yes_no`        | Radio group with fixed yes/no options     |
+| Address       | `address`       | Structured object value                   |
 | Date of birth | `date_of_birth` | Date input with age/date validation rules |
+
 
 ## Field modeling approach
 
@@ -149,16 +153,18 @@ Shared field shape:
 
 Suggested value shapes:
 
-| Field type | Submitted value shape |
-|---|---|
-| `short_text` | `string` |
-| `long_text` | `string` |
-| `email` | `string` |
-| `phone_number` | `string` |
-| `checkbox` | `boolean` |
-| `yes_no` | `"yes"` or `"no"` |
-| `address` | `{ line1, line2, city, state, postal_code, country }` |
-| `date_of_birth` | ISO date string `YYYY-MM-DD` |
+
+| Field type      | Submitted value shape                                 |
+| --------------- | ----------------------------------------------------- |
+| `short_text`    | `string`                                              |
+| `long_text`     | `string`                                              |
+| `email`         | `string`                                              |
+| `phone_number`  | `string`                                              |
+| `checkbox`      | `boolean`                                             |
+| `yes_no`        | `"yes"` or `"no"`                                     |
+| `address`       | `{ line1, line2, city, state, postal_code, country }` |
+| `date_of_birth` | ISO date string `YYYY-MM-DD`                          |
+
 
 Suggested config examples:
 
@@ -309,15 +315,15 @@ For field typing, prefer discriminated unions in Pydantic and matching TypeScrip
 
 ## Todo list
 
-- [ ] **Todo 1 — Scaffold** `backend/` and `frontend/` with all dependencies, configs, and boilerplate. No feature code — just a runnable skeleton for both apps.
-- [ ] **Todo 2 — Database models + Alembic** SQLAlchemy async models for `forms`, `fields`, `responses`. Initial Alembic migration. No routes yet.
-- [ ] **Todo 3 — Pydantic schemas** All request/response schemas for forms, fields, and submissions. TypeScript mirror types in `frontend/types/`. No route changes.
-- [ ] **Todo 4 — API routes** Layered routers/services/repositories for all five endpoints. Auth stubs (owner check ready but JWT not yet wired). Tests for all routes.
-- [ ] **Todo 5 — Supabase Auth** Supabase JWT verification in `backend/core/auth.py`. Next.js `@supabase/ssr` wrappers + `middleware.ts` + `/login` and `/signup` pages. Protected routes enforced end-to-end.
-- [ ] **Todo 6 — Form builder UI** Builder page: field palette (all 8 types), field editor, `@dnd-kit` reorder, save/publish toggle. Wired to `PUT /forms/{id}`.
-- [ ] **Todo 7 — Public form renderer** Public form page with correct control for each of the 8 field types. Client-side validation + `POST /forms/{id}/submit`. Success/error states.
-- [ ] **Todo 8 — Responses dashboard** Responses page: paginated table, readable answer rendering for all field types (address, date formatted correctly).
-- [ ] **Todo 9 — Harden** Rate limiting on public submit, CORS lockdown, consistent error UX, ruff + pytest passing, eslint + tsc passing.
+- [x] **Todo 1 — Scaffold** `backend/` and `frontend/` with all dependencies, configs, and boilerplate. No feature code — just a runnable skeleton for both apps.
+- **Todo 2 — Database models + Alembic** SQLAlchemy async models for `forms`, `fields`, `responses`. Initial Alembic migration. No routes yet.
+- **Todo 3 — Pydantic schemas** All request/response schemas for forms, fields, and submissions. TypeScript mirror types in `frontend/types/`. No route changes.
+- **Todo 4 — API routes** Layered routers/services/repositories for all five endpoints. Auth stubs (owner check ready but JWT not yet wired). Tests for all routes.
+- **Todo 5 — Supabase Auth** Supabase JWT verification in `backend/core/auth.py`. Next.js `@supabase/ssr` wrappers + `middleware.ts` + `/login` and `/signup` pages. Protected routes enforced end-to-end.
+- **Todo 6 — Form builder UI** Builder page: field palette (all 8 types), field editor, `@dnd-kit` reorder, save/publish toggle. Wired to `PUT /forms/{id}`.
+- **Todo 7 — Public form renderer** Public form page with correct control for each of the 8 field types. Client-side validation + `POST /forms/{id}/submit`. Success/error states.
+- **Todo 8 — Responses dashboard** Responses page: paginated table, readable answer rendering for all field types (address, date formatted correctly).
+- **Todo 9 — Harden** Rate limiting on public submit, CORS lockdown, consistent error UX, ruff + pytest passing, eslint + tsc passing.
 
 ## Quality and testing
 
@@ -361,3 +367,4 @@ Backend:
 - Bot protection on public submissions
 - Social login
 - Additional field types
+

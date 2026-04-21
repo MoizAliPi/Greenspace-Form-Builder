@@ -327,3 +327,15 @@ export type PaginationParams = {
   limit: number;
   offset: number;
 };
+
+// --- Auth (JWT) ---
+
+export type TokenResponse = {
+  access_token: string;
+  token_type: string;
+};
+
+export type UserRead = {
+  id: string;
+  email: string;
+};

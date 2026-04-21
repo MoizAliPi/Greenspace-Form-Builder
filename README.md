@@ -69,3 +69,13 @@ Settings load from **`backend/.env`** (see `backend/.env.example`). Pydantic rea
 | `JWT_SECRET` | Signing and verifying access tokens (`app/core/security.py`) |
 
 Defaults exist in `app/core/config.py` for local dev (including `DATABASE_URL` and `JWT_SECRET`), so a missing `.env` still runs.
+
+
+## Working Demo
+
+https://www.loom.com/share/07516bd8387a4cb3a1994c137585a8ad
+
+
+
+
+

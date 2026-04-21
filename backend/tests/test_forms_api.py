@@ -173,3 +173,45 @@ async def test_duplicate_field_ids_rejected(
         headers=auth_headers,
     )
     assert r.status_code == 422
+
+
+async def test_put_response_returns_updated_field_label(
+    client: AsyncClient,
+    auth_headers: dict[str, str],
+) -> None:
+    """Regression: PUT must return persisted field rows, not stale ORM state."""
+    rid = await client.post("/api/v1/forms", json={"title": "Labels"}, headers=auth_headers)
+    form_id = rid.json()["id"]
+    field_body = {
+        "type": "short_text",
+        "label": "First",
+        "required": False,
+        "order": 0,
+        "config": {},
+    }
+    first = await client.put(
+        f"/api/v1/forms/{form_id}",
+        json={"fields": [field_body]},
+        headers=auth_headers,
+    )
+    assert first.status_code == 200
+    field_id = first.json()["fields"][0]["id"]
+
+    second = await client.put(
+        f"/api/v1/forms/{form_id}",
+        json={
+            "fields": [
+                {
+                    "id": field_id,
+                    "type": "short_text",
+                    "label": "Updated",
+                    "required": False,
+                    "order": 0,
+                    "config": {},
+                }
+            ]
+        },
+        headers=auth_headers,
+    )
+    assert second.status_code == 200
+    assert second.json()["fields"][0]["label"] == "Updated"

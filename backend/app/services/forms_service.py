@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import ForbiddenError, NotFoundError, ValidationError
 from app.models.form import Form
 from app.models.user import User
-from app.repositories import fields as fields_repo
 from app.repositories import forms as forms_repo
 from app.repositories import responses as responses_repo
 from app.schemas.field import FieldCreate
@@ -103,6 +102,8 @@ async def update_form(
         raise ForbiddenError("Not allowed")
 
     patch = body.model_dump(exclude_unset=True)
+    updating_fields = "fields" in patch
+
     if "title" in patch and body.title is not None:
         form.title = body.title
     if "slug" in patch and body.slug is not None:
@@ -113,19 +114,24 @@ async def update_form(
     if "status" in patch and body.status is not None:
         form.status = body.status.value
 
-    if "fields" in patch:
+    if updating_fields:
         field_creates = body.fields or []
         _assert_unique_field_ids_when_present(field_creates)
-        await fields_repo.delete_for_form(session, form.id)
+        # ORM delete keeps the identity map consistent with bulk replace + expire_on_commit=False.
+        for existing in list(form.fields):
+            await session.delete(existing)
+        await session.flush()
         for fc in field_creates:
             session.add(field_create_to_model(form.id, fc))
 
     form.updated_at = datetime.now(UTC)
     await session.commit()
 
-    loaded = await forms_repo.get_by_id_with_fields(session, form_id)
-    assert loaded is not None
-    return form_model_to_read(loaded)
+    if updating_fields:
+        # Reload so the response matches DB (identity-mapped Form + expire_on_commit=False).
+        await session.refresh(form, attribute_names=["fields"])
+
+    return form_model_to_read(form)
 
 
 async def submit_form(

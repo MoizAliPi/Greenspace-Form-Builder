@@ -194,10 +194,10 @@ function ResponseCard({
           const text = formatAnswerForDisplay(ans?.value ?? null, field);
           return (
             <div key={field.id}>
-              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <dt className="text-sm font-bold text-foreground">
                 {field.label}
               </dt>
-              <dd className="mt-0.5 whitespace-pre-wrap text-sm text-foreground">
+              <dd className="mt-1 whitespace-pre-wrap text-sm font-normal text-foreground/90">
                 {text}
               </dd>
             </div>

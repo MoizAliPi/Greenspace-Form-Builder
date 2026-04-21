@@ -2,11 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { FieldConfigEditor } from "@/components/builder/field-config-editor";
 import { SortableFieldList } from "@/components/builder/sortable-field-list";
 import { ErrorAlert } from "@/components/error-alert";
+import { useToast } from "@/components/toast-provider";
 import { getErrorMessage } from "@/lib/error-message";
 import {
   createNewField,
@@ -39,13 +40,25 @@ function formReadToDraft(r: {
   };
 }
 
+/** Matches the payload used for Save so dirty state tracks title, slug, status, and fields. */
+function serializeDraft(d: Draft): string {
+  return JSON.stringify({
+    title: d.title.trim(),
+    slug: d.slug.trim(),
+    status: d.status,
+    fields: fieldsToFieldCreates(d.fields),
+  });
+}
+
 type Props = {
   formId: string;
 };
 
 export function FormBuilder({ formId }: Props) {
   const queryClient = useQueryClient();
+  const { success: toastSuccess } = useToast();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [savedBaseline, setSavedBaseline] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,16 +69,22 @@ export function FormBuilder({ formId }: Props) {
   });
 
   useEffect(() => {
-    if (query.data) {
-      setDraft(formReadToDraft(query.data));
-      setSelectedId((current) => {
-        if (current && query.data.fields.some((f) => f.id === current)) {
-          return current;
-        }
-        return query.data.fields[0]?.id ?? null;
-      });
-    }
+    if (!query.data) return;
+    const next = formReadToDraft(query.data);
+    setDraft(next);
+    setSavedBaseline(serializeDraft(next));
+    setSelectedId((current) => {
+      if (current && query.data.fields.some((f) => f.id === current)) {
+        return current;
+      }
+      return query.data.fields[0]?.id ?? null;
+    });
   }, [query.data]);
+
+  const isDirty = useMemo(() => {
+    if (!draft || savedBaseline === null) return false;
+    return serializeDraft(draft) !== savedBaseline;
+  }, [draft, savedBaseline]);
 
   const saveMutation = useMutation({
     mutationFn: (body: Parameters<typeof updateForm>[1]) =>
@@ -76,8 +95,11 @@ export function FormBuilder({ formId }: Props) {
       void queryClient.invalidateQueries({
         queryKey: ["forms", formId, "responses"],
       });
-      setDraft(formReadToDraft(updated));
+      const synced = formReadToDraft(updated);
+      setDraft(synced);
+      setSavedBaseline(serializeDraft(synced));
       setError(null);
+      toastSuccess("Form saved.");
     },
     onError: (e) => {
       setError(getErrorMessage(e, "Could not save form."));
@@ -92,7 +114,9 @@ export function FormBuilder({ formId }: Props) {
       void queryClient.invalidateQueries({
         queryKey: ["forms", formId, "responses"],
       });
-      setDraft(formReadToDraft(updated));
+      const synced = formReadToDraft(updated);
+      setDraft(synced);
+      setSavedBaseline(serializeDraft(synced));
       setError(null);
     },
     onError: (e) => {
@@ -234,7 +258,10 @@ export function FormBuilder({ formId }: Props) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={isBusy}
+            disabled={isBusy || !isDirty}
+            title={
+              !isDirty ? "No changes to save" : undefined
+            }
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {saveMutation.isPending ? "Saving…" : "Save"}

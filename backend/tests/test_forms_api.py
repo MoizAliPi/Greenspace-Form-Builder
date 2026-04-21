@@ -175,6 +175,68 @@ async def test_duplicate_field_ids_rejected(
     assert r.status_code == 422
 
 
+async def test_responses_pagination(
+    client: AsyncClient,
+    auth_headers: dict[str, str],
+) -> None:
+    """`limit`/`offset` slice submissions and `total` stays constant across pages."""
+    create = await client.post("/api/v1/forms", json={"title": "Paging"}, headers=auth_headers)
+    form_id = create.json()["id"]
+    field = {
+        "type": "short_text",
+        "label": "Name",
+        "required": False,
+        "order": 0,
+        "config": {},
+    }
+    await client.put(
+        f"/api/v1/forms/{form_id}",
+        json={"status": "published", "fields": [field]},
+        headers=auth_headers,
+    )
+    form = (await client.get(f"/api/v1/forms/{form_id}", headers=auth_headers)).json()
+    field_id = form["fields"][0]["id"]
+
+    for i in range(5):
+        r = await client.post(
+            f"/api/v1/forms/{form_id}/submit",
+            json={"answers": [{"field_id": field_id, "value": f"r{i}"}]},
+        )
+        assert r.status_code == 201
+
+    page1 = await client.get(
+        f"/api/v1/forms/{form_id}/responses?limit=2&offset=0",
+        headers=auth_headers,
+    )
+    assert page1.status_code == 200
+    body1 = page1.json()
+    assert body1["total"] == 5
+    assert len(body1["responses"]) == 2
+
+    page2 = await client.get(
+        f"/api/v1/forms/{form_id}/responses?limit=2&offset=2",
+        headers=auth_headers,
+    )
+    body2 = page2.json()
+    assert body2["total"] == 5
+    assert len(body2["responses"]) == 2
+    ids1 = {row["id"] for row in body1["responses"]}
+    ids2 = {row["id"] for row in body2["responses"]}
+    assert ids1.isdisjoint(ids2)
+
+    tail = await client.get(
+        f"/api/v1/forms/{form_id}/responses?limit=2&offset=4",
+        headers=auth_headers,
+    )
+    assert len(tail.json()["responses"]) == 1
+
+    bad = await client.get(
+        f"/api/v1/forms/{form_id}/responses?limit=0",
+        headers=auth_headers,
+    )
+    assert bad.status_code == 422
+
+
 async def test_put_response_returns_updated_field_label(
     client: AsyncClient,
     auth_headers: dict[str, str],

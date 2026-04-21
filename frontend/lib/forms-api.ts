@@ -24,14 +24,19 @@ export async function createForm(body: FormCreate): Promise<FormRead> {
   return apiFetch<FormRead>("/forms", { method: "POST", body });
 }
 
+/**
+ * Load a form for the **builder**. Always sends `Authorization`; the backend returns 404
+ * for non-owners so a missing/expired token surfaces immediately as a builder error.
+ */
 export async function getForm(formId: string): Promise<FormRead> {
   return apiFetch<FormRead>(`/forms/${formId}`);
 }
 
 /**
- * Load a form for viewing (builder preview or public fill page).
- * Sends `Authorization` when a token exists so the **owner** can load a **draft**;
- * anonymous requests only receive **published** forms (see backend `get_form` ACL).
+ * Load a form for **viewing** (public `/f/[id]` page and draft previews). Sends the JWT if
+ * present so the owner can preview a draft; anonymous requests only receive published forms
+ * (ACL enforced in `backend/app/services/forms_service.py::get_form`). Kept separate from
+ * `getForm` so intent is obvious at the call site even though the URL is identical today.
  */
 export async function getFormForViewer(formId: string): Promise<FormRead> {
   return apiFetch<FormRead>(`/forms/${formId}`);

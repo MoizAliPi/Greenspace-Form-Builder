@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 from enum import StrEnum
 
 from pydantic import Field
 
-from app.schemas._base import InputModel, OutputModel
+from app.schemas._base import InputModel, OutputModel, UtcDatetime
 from app.schemas._fields import Slug, Title
 from app.schemas.field import FieldCreate, FieldRead
 
@@ -36,8 +35,8 @@ class FormRead(OutputModel):
     title: Title
     slug: Slug
     status: FormStatus
-    created_at: datetime
-    updated_at: datetime
+    created_at: UtcDatetime
+    updated_at: UtcDatetime
     fields: list[FieldRead] = Field(default_factory=list)
 
 
@@ -49,8 +48,8 @@ class FormSummary(OutputModel):
     title: Title
     slug: Slug
     status: FormStatus
-    created_at: datetime
-    updated_at: datetime
+    created_at: UtcDatetime
+    updated_at: UtcDatetime
 
 
 class FormsListRead(OutputModel):

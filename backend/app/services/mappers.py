@@ -11,6 +11,12 @@ from app.schemas.form import FormRead, FormStatus, FormSummary
 
 
 def field_create_to_model(form_id: uuid.UUID, fc: FieldCreate) -> FieldModel:
+    """Build a `FieldModel` row from an API `FieldCreate`.
+
+    Accepts a pre-existing `id` (so callers can reuse UUIDs across PUTs and keep answers
+    linkable) or assigns a fresh UUID for new fields. Enum `type` values are unwrapped to
+    their string representation because the column stores raw strings, not enum values.
+    """
     data = fc.model_dump(mode="python")
     raw_id = data.get("id")
     if raw_id is None:

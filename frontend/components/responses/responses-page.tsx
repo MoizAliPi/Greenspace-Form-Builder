@@ -15,10 +15,19 @@ const PAGE_SIZE = 20;
 
 function formatSubmittedAt(iso: string): string {
   try {
-    const d = new Date(iso);
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
+    // Defensive: if the backend ever returns a naive string (no `Z`/offset), assume UTC so
+    // the browser doesn't interpret it as local wall-clock time. The server schema already
+    // tags everything UTC; this just guards against regressions.
+    const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(iso);
+    const d = new Date(hasTz ? iso : `${iso}Z`);
+    if (Number.isNaN(d.getTime())) return iso;
+    return new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     }).format(d);
   } catch {
     return iso;

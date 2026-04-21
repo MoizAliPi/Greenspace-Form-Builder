@@ -41,7 +41,7 @@ Frontend stack:
 - Next.js App Router
 - TypeScript strict mode
 - Tailwind CSS
-- shadcn/ui
+- Radix UI primitives (Toast)
 - TanStack Query
 - `@dnd-kit` for builder reordering
 - Email/password auth against the FastAPI API (JWT in `Authorization` header)
@@ -69,7 +69,6 @@ frontend/
   app/
   components/
   lib/
-  hooks/
   types/
 
 backend/

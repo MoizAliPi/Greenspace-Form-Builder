@@ -9,6 +9,12 @@ from app.repositories import user as user_repo
 
 
 async def register_user(session: AsyncSession, *, email: str, password: str) -> tuple[User, str]:
+    """Create a new account and return `(user, access_token)`.
+
+    Emails are normalized (trimmed + lowercased) before uniqueness checks so "Ada@x.com" and
+    "ada@x.com" cannot both register. Passwords are bcrypt-hashed; the plaintext is never
+    persisted or logged.
+    """
     normalized = email.strip().lower()
     existing = await user_repo.get_user_by_email(session, normalized)
     if existing is not None:
@@ -24,6 +30,11 @@ async def register_user(session: AsyncSession, *, email: str, password: str) -> 
 
 
 async def login_user(session: AsyncSession, *, email: str, password: str) -> tuple[User, str]:
+    """Verify credentials and return `(user, access_token)`, else raise 401.
+
+    Returns the same generic "Invalid email or password" error for both unknown-email and
+    wrong-password cases so callers cannot enumerate registered emails.
+    """
     normalized = email.strip().lower()
     user = await user_repo.get_user_by_email(session, normalized)
     if user is None or not verify_password(password, user.password_hash):

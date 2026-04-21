@@ -19,7 +19,12 @@ from app.utils.slug import generate_auto_slug, slugify_title
 
 
 def _assert_unique_field_ids_when_present(field_creates: list[FieldCreate]) -> None:
-    """Reject duplicate `id` values so we never hit DB UNIQUE on `fields.id`."""
+    """Reject payloads whose fields reuse the same `id`.
+
+    Fails fast with a clear 422 instead of letting the DB raise a UNIQUE constraint error
+    halfway through the rewrite in `update_form`. Fields without an `id` are ignored — they
+    will be assigned fresh UUIDs on insert.
+    """
     seen: set[uuid.UUID] = set()
     for fc in field_creates:
         data = fc.model_dump(mode="python")
@@ -36,6 +41,12 @@ def _assert_unique_field_ids_when_present(field_creates: list[FieldCreate]) -> N
 
 
 async def create_form(session: AsyncSession, owner_id: uuid.UUID, body: FormCreate) -> FormRead:
+    """Create a draft form for `owner_id`.
+
+    If the caller provides a slug, it must be globally unique. Otherwise we derive one from the
+    title and retry `generate_auto_slug` until the database accepts it, so concurrent callers
+    with the same title do not collide on the `forms.slug` UNIQUE index.
+    """
     if body.slug is not None:
         slug = body.slug
         if await forms_repo.get_by_slug(session, slug):
@@ -80,6 +91,12 @@ async def list_forms_for_owner(
 
 
 async def get_form(session: AsyncSession, form_id: uuid.UUID, user: User | None) -> FormRead:
+    """Return a form if the caller is allowed to see it, else 404.
+
+    Published forms are visible to anyone (including anonymous respondents). Drafts are only
+    visible to their owner, and we return 404 (not 403) for non-owners so the existence of a
+    draft is not leaked.
+    """
     form = await forms_repo.get_by_id_with_fields(session, form_id)
     if form is None:
         raise NotFoundError("Form not found")
@@ -95,6 +112,20 @@ async def update_form(
     owner: User,
     body: FormUpdate,
 ) -> FormRead:
+    """Patch form metadata and/or fully replace the fields collection.
+
+    Only keys present in the request (`model_dump(exclude_unset=True)`) are applied, so callers
+    can PATCH-style update title, slug, status, or fields independently. When `fields` is
+    present we do a full replace: every existing Field is ORM-deleted (to keep the session's
+    identity map in sync, since `expire_on_commit=False` otherwise leaves stale rows cached)
+    and the payload is re-inserted. After commit we refresh `form.fields` so the response
+    reflects what was actually persisted, not the pre-commit in-memory state.
+
+    Raises:
+        NotFoundError: No form with `form_id`.
+        ForbiddenError: Caller is not the form owner.
+        ValidationError: Slug collision, or duplicate field ids in the payload.
+    """
     form = await forms_repo.get_by_id_with_fields(session, form_id)
     if form is None:
         raise NotFoundError("Form not found")
@@ -117,7 +148,8 @@ async def update_form(
     if updating_fields:
         field_creates = body.fields or []
         _assert_unique_field_ids_when_present(field_creates)
-        # ORM delete keeps the identity map consistent with bulk replace + expire_on_commit=False.
+        # ORM delete (not bulk DELETE) so SQLAlchemy evicts the existing Field rows from the
+        # session's identity map before we re-insert rows with the same ids.
         for existing in list(form.fields):
             await session.delete(existing)
         await session.flush()
@@ -128,7 +160,8 @@ async def update_form(
     await session.commit()
 
     if updating_fields:
-        # Reload so the response matches DB (identity-mapped Form + expire_on_commit=False).
+        # `expire_on_commit=False` means the collection is still pointing at the pre-commit
+        # Field objects. Reload from the DB so `form_model_to_read` returns the saved state.
         await session.refresh(form, attribute_names=["fields"])
 
     return form_model_to_read(form)
@@ -151,6 +184,14 @@ async def list_form_responses(
     limit: int,
     offset: int,
 ) -> ResponsesRead:
+    """Return the owner-visible responses for a form with answers joined to current field labels.
+
+    Answers are stored as a JSON list of `{field_id, value}` so fields that are renamed or
+    deleted after submission still display sensibly. We resolve each stored `field_id` against
+    the form's current fields; unknown ids (e.g. a field deleted since the submission) fall
+    back to the label "Unknown field" rather than being dropped, so dashboards remain
+    consistent with historical totals.
+    """
     form = await forms_repo.get_by_id_with_fields(session, form_id)
     if form is None:
         raise NotFoundError("Form not found")

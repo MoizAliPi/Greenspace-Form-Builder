@@ -70,6 +70,11 @@ Settings load from **`backend/.env`** (see `backend/.env.example`). Pydantic rea
 
 Defaults exist in `app/core/config.py` for local dev (including `DATABASE_URL` and `JWT_SECRET`), so a missing `.env` still runs.
 
+## Known limitations
+
+- **Auth tokens are kept in `localStorage`** (`frontend/lib/auth-storage.ts`). That keeps the demo simple, but it is an XSS surface and should be swapped for an `httpOnly` cookie before any production use.
+- **Public submissions (`POST /forms/{id}/submit`) have no rate limit or bot protection.** Fine for the MVP, not for production.
+- **`JWT_SECRET` has a development default in `app/core/config.py`.** Always set it via `.env` (or environment variable) in any shared environment.
 
 ## Working Demo
 

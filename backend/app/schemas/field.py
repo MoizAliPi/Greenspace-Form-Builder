@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas._base import InputModel, OutputModel
+from app.schemas._base import InputModel, OutputModel, UtcDatetime
 from app.schemas._fields import Title
 
 # --- Field type (stored in `fields.type`) ---
@@ -199,7 +198,7 @@ class ShortTextFieldRead(OutputModel):
     required: bool
     order: int
     config: ShortTextConfig
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class LongTextFieldRead(OutputModel):
@@ -210,7 +209,7 @@ class LongTextFieldRead(OutputModel):
     required: bool
     order: int
     config: LongTextConfig
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class EmailFieldRead(OutputModel):
@@ -221,7 +220,7 @@ class EmailFieldRead(OutputModel):
     required: bool
     order: int
     config: EmailConfig
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class PhoneNumberFieldRead(OutputModel):
@@ -232,7 +231,7 @@ class PhoneNumberFieldRead(OutputModel):
     required: bool
     order: int
     config: PhoneNumberConfig
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class CheckboxFieldRead(OutputModel):
@@ -243,7 +242,7 @@ class CheckboxFieldRead(OutputModel):
     required: bool
     order: int
     config: CheckboxConfig
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class YesNoFieldRead(OutputModel):
@@ -254,7 +253,7 @@ class YesNoFieldRead(OutputModel):
     required: bool
     order: int
     config: YesNoConfig
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class AddressFieldRead(OutputModel):
@@ -265,7 +264,7 @@ class AddressFieldRead(OutputModel):
     required: bool
     order: int
     config: AddressConfig
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class DateOfBirthFieldRead(OutputModel):
@@ -276,7 +275,7 @@ class DateOfBirthFieldRead(OutputModel):
     required: bool
     order: int
     config: DateOfBirthConfig
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 FieldRead = Annotated[

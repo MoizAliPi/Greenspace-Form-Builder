@@ -18,6 +18,10 @@ from app.schemas.response import FormSubmit, ResponseRead
 
 
 def _validate_dd_mm_yyyy(value: str) -> None:
+    """Raise ValidationError unless `value` matches the required DD-MM-YYYY wire format.
+
+    `strptime` implicitly rejects impossible calendar dates like "31-02-2024".
+    """
     try:
         datetime.strptime(value, "%d-%m-%Y")
     except (TypeError, ValueError) as e:
@@ -25,6 +29,13 @@ def _validate_dd_mm_yyyy(value: str) -> None:
 
 
 def _validate_answer(field: FieldModel, value: Any) -> None:
+    """Server-side type/format check for one answer.
+
+    Mirrors the client-side rules in `frontend/lib/public-form/validate.ts`; the server stays
+    the source of truth because the client validator is only for UX. Address values are
+    accepted as any dict here — nested required-subfield rules are enforced by
+    `frontend` config and revalidated when we later add structured address schemas.
+    """
     ft = field.type
     if ft == FieldType.SHORT_TEXT.value or ft == FieldType.LONG_TEXT.value:
         if not isinstance(value, str):
@@ -68,6 +79,13 @@ async def submit_response(
     form_id: uuid.UUID,
     body: FormSubmit,
 ) -> ResponseRead:
+    """Persist a public submission against the current field definition of a published form.
+
+    Enforces, in order: form exists, form is published, no duplicate `field_id` in the payload,
+    every submitted id belongs to the form, every `required` field has a value, and each value
+    passes `_validate_answer`. Answers are stored as a JSON list of `{field_id, value}` so the
+    form can be renamed or have fields deleted/reordered without losing historical submissions.
+    """
     form = await forms_repo.get_by_id_with_fields(session, form_id)
     if form is None:
         raise NotFoundError("Form not found")

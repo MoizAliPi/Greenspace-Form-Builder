@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 from typing import Any
 
 from pydantic import Field
 
-from app.schemas._base import InputModel, OutputModel
+from app.schemas._base import InputModel, OutputModel, UtcDatetime
 
 
 class AnswerSubmit(InputModel):
@@ -21,7 +20,7 @@ class FormSubmit(InputModel):
 class ResponseRead(OutputModel):
     id: uuid.UUID
     form_id: uuid.UUID
-    submitted_at: datetime
+    submitted_at: UtcDatetime
 
 
 class AnswerRead(OutputModel):
@@ -32,7 +31,7 @@ class AnswerRead(OutputModel):
 
 class ResponseDetail(OutputModel):
     id: uuid.UUID
-    submitted_at: datetime
+    submitted_at: UtcDatetime
     answers: list[AnswerRead]
 
 

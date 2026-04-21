@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     )
     JWT_ALGORITHM: str = Field(default="HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60 * 24 * 7)
-    LOG_LEVEL: str = Field(default="INFO")
 
 
 @lru_cache

@@ -5,6 +5,14 @@ from fastapi.responses import JSONResponse
 
 
 class AppError(Exception):
+    """Base class for service-layer errors that map to a uniform JSON response shape.
+
+    Subclasses set `status_code` and `code` so routers can raise semantic errors
+    (`NotFoundError`, `ForbiddenError`, ...) without knowing about HTTP. The registered
+    exception handler converts every `AppError` to `{"error": {"code", "message"}}`, which the
+    frontend parses in `lib/api.ts::extractMessage`.
+    """
+
     status_code: int = 400
     code: str = "bad_request"
 
@@ -34,6 +42,11 @@ class ValidationError(AppError):
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    """Install the single `AppError` → JSON response mapping on the FastAPI app.
+
+    Kept separate from `create_app` so tests that build a minimal app can opt in.
+    """
+
     @app.exception_handler(AppError)
     async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
         return JSONResponse(

@@ -24,6 +24,15 @@ class FieldType(StrEnum):
     DATE_OF_BIRTH = "date_of_birth"
 
 
+_field_create_id = Field(
+    default=None,
+    description=(
+        "Optional stable field id. Omit for new fields (ids are generated); "
+        "if set, must be unique across all items in `fields`."
+    ),
+    examples=[None],
+)
+
 # --- Per-type config (stored in `fields.config`) ---
 
 
@@ -99,7 +108,7 @@ class DateOfBirthConfig(BaseModel):
 
 class ShortTextFieldCreate(InputModel):
     type: Literal[FieldType.SHORT_TEXT] = FieldType.SHORT_TEXT
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None = _field_create_id
     label: Title
     required: bool = False
     order: int = Field(ge=0)
@@ -108,7 +117,7 @@ class ShortTextFieldCreate(InputModel):
 
 class LongTextFieldCreate(InputModel):
     type: Literal[FieldType.LONG_TEXT] = FieldType.LONG_TEXT
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None = _field_create_id
     label: Title
     required: bool = False
     order: int = Field(ge=0)
@@ -117,7 +126,7 @@ class LongTextFieldCreate(InputModel):
 
 class EmailFieldCreate(InputModel):
     type: Literal[FieldType.EMAIL] = FieldType.EMAIL
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None = _field_create_id
     label: Title
     required: bool = False
     order: int = Field(ge=0)
@@ -126,7 +135,7 @@ class EmailFieldCreate(InputModel):
 
 class PhoneNumberFieldCreate(InputModel):
     type: Literal[FieldType.PHONE_NUMBER] = FieldType.PHONE_NUMBER
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None = _field_create_id
     label: Title
     required: bool = False
     order: int = Field(ge=0)
@@ -135,7 +144,7 @@ class PhoneNumberFieldCreate(InputModel):
 
 class CheckboxFieldCreate(InputModel):
     type: Literal[FieldType.CHECKBOX] = FieldType.CHECKBOX
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None = _field_create_id
     label: Title
     required: bool = False
     order: int = Field(ge=0)
@@ -144,7 +153,7 @@ class CheckboxFieldCreate(InputModel):
 
 class YesNoFieldCreate(InputModel):
     type: Literal[FieldType.YES_NO] = FieldType.YES_NO
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None = _field_create_id
     label: Title
     required: bool = False
     order: int = Field(ge=0)
@@ -153,7 +162,7 @@ class YesNoFieldCreate(InputModel):
 
 class AddressFieldCreate(InputModel):
     type: Literal[FieldType.ADDRESS] = FieldType.ADDRESS
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None = _field_create_id
     label: Title
     required: bool = False
     order: int = Field(ge=0)
@@ -162,7 +171,7 @@ class AddressFieldCreate(InputModel):
 
 class DateOfBirthFieldCreate(InputModel):
     type: Literal[FieldType.DATE_OF_BIRTH] = FieldType.DATE_OF_BIRTH
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None = _field_create_id
     label: Title
     required: bool = False
     order: int = Field(ge=0)

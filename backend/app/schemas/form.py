@@ -39,3 +39,20 @@ class FormRead(OutputModel):
     created_at: datetime
     updated_at: datetime
     fields: list[FieldRead] = Field(default_factory=list)
+
+
+class FormSummary(OutputModel):
+    """Form metadata without fields — for dashboard / picker lists."""
+
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    title: Title
+    slug: Slug
+    status: FormStatus
+    created_at: datetime
+    updated_at: datetime
+
+
+class FormsListRead(OutputModel):
+    items: list[FormSummary]
+    total: int

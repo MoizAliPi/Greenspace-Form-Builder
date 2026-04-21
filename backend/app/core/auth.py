@@ -28,3 +28,17 @@ async def get_current_user(
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
     return user
+
+
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    session: AsyncSession = Depends(get_session),
+) -> User | None:
+    """Bearer token if valid; otherwise `None` (no error)."""
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        return None
+    try:
+        user_id: uuid.UUID = decode_access_token_user_id(credentials.credentials)
+    except JWTError:
+        return None
+    return await session.get(User, user_id)

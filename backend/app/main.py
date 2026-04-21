@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import app.models  # noqa: F401 - register ORM models with Base.metadata
 from app.core.config import settings
 from app.core.errors import register_exception_handlers
-from app.routers import auth, health
+from app.routers import auth, forms, health
 
 
 @asynccontextmanager
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(forms.router)
 
     return app
 

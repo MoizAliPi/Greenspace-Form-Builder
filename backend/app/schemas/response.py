@@ -43,7 +43,7 @@ class ResponsesRead(OutputModel):
 
 
 class PaginationParams(InputModel):
-    """Query params for `GET /forms/{id}/responses` (used in Todo 4)."""
+    """Query params for `GET /forms/{id}/responses`."""
 
     limit: int = Field(default=50, ge=1, le=200)
     offset: int = Field(default=0, ge=0)

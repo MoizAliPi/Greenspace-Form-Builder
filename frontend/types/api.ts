@@ -272,6 +272,22 @@ export type FormRead = {
   fields: FieldRead[];
 };
 
+/** Form row without nested fields — e.g. dashboard list from `GET /api/v1/forms`. */
+export type FormSummary = {
+  id: string;
+  owner_id: string;
+  title: string;
+  slug: string;
+  status: FormStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormsListRead = {
+  items: FormSummary[];
+  total: number;
+};
+
 // --- Submissions & responses ---
 
 export type AnswerSubmit = {

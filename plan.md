@@ -134,7 +134,7 @@ Recommended internal field type IDs:
 | Checkbox      | `checkbox`      | Single boolean checkbox                   |
 | Yes/No        | `yes_no`        | Radio group with fixed yes/no options     |
 | Address       | `address`       | Structured object value                   |
-| Date of birth | `date_of_birth` | Date input with age/date validation rules |
+| Date of birth | `date_of_birth` | Date input in DD-MM-YYYY (day-month-year) |
 
 
 ## Field modeling approach
@@ -163,7 +163,7 @@ Suggested value shapes:
 | `checkbox`      | `boolean`                                             |
 | `yes_no`        | `"yes"` or `"no"`                                     |
 | `address`       | `{ line1, line2, city, state, postal_code, country }` |
-| `date_of_birth` | ISO date string `YYYY-MM-DD`                          |
+| `date_of_birth` | `DD-MM-YYYY` string (day, month, year)                |
 
 
 Suggested config examples:
@@ -179,7 +179,7 @@ Suggested config examples:
   "address": {
     "fields": ["line1", "line2", "city", "state", "postal_code", "country"]
   },
-  "date_of_birth": { "min_age": 0, "max_age": 120 }
+  "date_of_birth": { "date_format": "DD-MM-YYYY", "placeholder": "15-04-1990" }
 }
 ```
 
@@ -259,7 +259,7 @@ Submission validation rules by field:
 - `checkbox`: validate boolean
 - `yes_no`: validate only `"yes"` or `"no"`
 - `address`: validate required address subfields when enabled
-- `date_of_birth`: validate date format and optional age constraints
+- `date_of_birth`: validate DD-MM-YYYY (day, month, year)
 
 ## Frontend implementation plan
 
@@ -324,7 +324,7 @@ For field typing, prefer discriminated unions in Pydantic and matching TypeScrip
 
 - [x] **Todo 1 — Scaffold** `backend/` and `frontend/` with all dependencies, configs, and boilerplate. No feature code — just a runnable skeleton for both apps.
 - [x] **Todo 2 — Database models + Alembic** SQLAlchemy async models for `forms`, `fields`, `responses`. Initial Alembic migration. No routes yet.
-- **Todo 3 — Pydantic schemas** All request/response schemas for forms, fields, and submissions. TypeScript mirror types in `frontend/types/`. No route changes.
+- [x] **Todo 3 — Pydantic schemas** All request/response schemas for forms, fields, and submissions. TypeScript mirror types in `frontend/types/`. No route changes.
 - **Todo 4 — API routes** Layered routers/services/repositories for all five endpoints. Auth stubs (owner check ready but JWT not yet wired). Tests for all routes.
 - **Todo 5 — Local auth (JWT)** Backend: `POST/GET /api/v1/auth/register|login|me`, bcrypt passwords, HS256 JWT (`core/security.py`, `core/auth.py`). Frontend: `/login` and `/signup` (or combined page), persist token, attach Bearer token to creator API calls, optional route guards.
 - **Todo 6 — Form builder UI** Builder page: field palette (all 8 types), field editor, `@dnd-kit` reorder, save/publish toggle. Wired to `PUT /forms/{id}`.

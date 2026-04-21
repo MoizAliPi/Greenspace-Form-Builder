@@ -1,0 +1,71 @@
+"""Pydantic wire schemas — request/response contracts for the API."""
+
+from __future__ import annotations
+
+from app.schemas._base import InputModel, OutputModel
+from app.schemas.field import (
+    AddressFieldCreate,
+    AddressFieldRead,
+    CheckboxFieldCreate,
+    CheckboxFieldRead,
+    DateOfBirthFieldCreate,
+    DateOfBirthFieldRead,
+    EmailFieldCreate,
+    EmailFieldRead,
+    FieldCreate,
+    FieldRead,
+    FieldType,
+    LongTextFieldCreate,
+    LongTextFieldRead,
+    PhoneNumberFieldCreate,
+    PhoneNumberFieldRead,
+    ShortTextFieldCreate,
+    ShortTextFieldRead,
+    YesNoFieldCreate,
+    YesNoFieldRead,
+)
+from app.schemas.form import FormCreate, FormRead, FormStatus, FormUpdate
+from app.schemas.response import (
+    AnswerRead,
+    AnswerSubmit,
+    FormSubmit,
+    PaginationParams,
+    ResponseDetail,
+    ResponseRead,
+    ResponsesRead,
+)
+
+__all__ = [
+    "AddressFieldCreate",
+    "AddressFieldRead",
+    "AnswerRead",
+    "AnswerSubmit",
+    "CheckboxFieldCreate",
+    "CheckboxFieldRead",
+    "DateOfBirthFieldCreate",
+    "DateOfBirthFieldRead",
+    "EmailFieldCreate",
+    "EmailFieldRead",
+    "FieldCreate",
+    "FieldRead",
+    "FieldType",
+    "FormCreate",
+    "FormRead",
+    "FormStatus",
+    "FormSubmit",
+    "FormUpdate",
+    "InputModel",
+    "LongTextFieldCreate",
+    "LongTextFieldRead",
+    "OutputModel",
+    "PaginationParams",
+    "PhoneNumberFieldCreate",
+    "PhoneNumberFieldRead",
+    "ResponseDetail",
+    "ResponseRead",
+    "ResponsesRead",
+    "ShortTextFieldCreate",
+    "ShortTextFieldRead",
+    "YesNoFieldCreate",
+    "YesNoFieldRead",
+]

@@ -1,106 +1,71 @@
-# Form Builder
+# Greenspace Form Builder
 
-A Typeform-style form builder with a **Next.js** frontend and a **FastAPI** backend. The default stack for local development uses **SQLite** on disk and **JWT-based auth** issued by the API (no external database or auth provider required for reviewers).
+A Typeform-style form builder with a Next.js frontend and a FastAPI backend. Local development uses SQLite and JWT auth from the API.
 
-## Why This Stack
-
-FastAPI gives us async-first Python, auto-generated Swagger docs, and Pydantic schemas that become the single source of truth for wire types. Next.js App Router lets us keep the builder and dashboard as client-heavy pages while serving the public form as a server component. JSON columns keep field config flexible without a migration for every new field type.
-
-## Features
-
-- [ ] Form builder with drag-and-drop field reordering
-- [ ] Field types: short text, long text, email, phone number, checkbox, yes/no, address, date of birth
-- [ ] Authenticated creators (email + password via API JWT)
-- [ ] Public form view for respondents
-- [ ] Response collection and paginated dashboard
-- [ ] Auto-generated API docs at `/docs`
-
-## Data Model
-
-| Table       | Purpose                                              |
-| ----------- | ---------------------------------------------------- |
-| `users`     | Creators — email + password hash                     |
-| `forms`     | Form metadata — title, slug, status, `owner_id` → users |
-| `fields`    | Ordered fields with JSON `config` per type         |
-| `responses` | One row per submission, JSON `answers`             |
-
-## Local Setup
-
-### Prerequisites
+## Prerequisites
 
 - Python 3.12+
 - Node.js 20+
 
-### Backend
+## Backend
 
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate 
 pip install -e ".[dev]"
-cp .env.example .env   # optional: set JWT_SECRET for non-local sharing
+cp .env.example .env
 alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
-By default the API uses `DATABASE_URL=sqlite+aiosqlite:///./formbuilder.db` (file created next to the working directory). Auth endpoints:
+API: http://localhost:8000 · OpenAPI: http://localhost:8000/docs
 
-- `POST /api/v1/auth/register` — create account, returns JWT
-- `POST /api/v1/auth/login` — returns JWT
-- `GET /api/v1/auth/me` — `Authorization: Bearer <token>`
-
-API docs: http://localhost:8000/docs
-
-### Frontend
+## Frontend
 
 ```bash
 cd frontend
 npm install
-cp .env.local.example .env.local   # optional; defaults match local API
 npm run dev
 ```
 
 App: http://localhost:3000
 
-### Run Tests
+## Tests
 
 ```bash
-cd backend
-pytest tests/ -v
+cd backend && pytest
 ```
 
-## Project Structure
+## Project structure
 
 ```
-form-builder/
-├── backend/               # FastAPI + SQLAlchemy
-│   ├── app/
-│   │   ├── core/          # config, security, auth deps, errors
-│   │   ├── db/            # engine, session, Base
-│   │   ├── models/        # SQLAlchemy ORM models
-│   │   ├── schemas/       # Pydantic request/response schemas
-│   │   ├── repositories/  # async DB queries
-│   │   ├── services/      # business logic
-│   │   └── routers/       # HTTP route handlers
+Greenspace-Challenge/
+├── backend/
 │   ├── alembic/           # migrations
+│   ├── app/
+│   │   ├── core/          # config, security, errors
+│   │   ├── db/            # engine, session
+│   │   ├── models/        # SQLAlchemy models
+│   │   ├── repositories/  # data access
+│   │   ├── routers/       # FastAPI routes
+│   │   ├── schemas/       # Pydantic API types
+│   │   └── services/      # business logic
 │   └── tests/
-└── frontend/              # Next.js App Router
-    ├── app/               # pages and layouts
-    ├── components/        # UI components
-    ├── hooks/             # TanStack Query hooks
-    ├── lib/               # API client, utils, env
-    └── types/             # shared TypeScript types
+└── frontend/
+    ├── app/               # App Router pages & layouts
+    ├── components/        # UI (builder, public form, auth, …)
+    ├── lib/               # API client, auth, env, utils
+    └── types/             # TypeScript types
 ```
 
-## Environment Variables
+## Environment
 
-```bash
-# backend/.env
-DATABASE_URL=sqlite+aiosqlite:///./formbuilder.db
-CORS_ORIGINS=["http://localhost:3000"]
-JWT_SECRET=replace-with-a-long-random-secret-at-least-32-chars
+Settings load from **`backend/.env`** (see `backend/.env.example`). Pydantic reads these at startup; they are used in code:
 
-# frontend/.env.local
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+| Variable | Used for |
+| -------- | -------- |
+| `DATABASE_URL` | SQLAlchemy engine and Alembic (`app/db/session.py`, `alembic/env.py`) |
+| `CORS_ORIGINS` | Browser CORS allowlist (`app/main.py`) |
+| `JWT_SECRET` | Signing and verifying access tokens (`app/core/security.py`) |
 
-The default `JWT_SECRET` in `app/core/config.py` is for local development only; set a strong secret when deploying or sharing an environment.
+Defaults exist in `app/core/config.py` for local dev (including `DATABASE_URL` and `JWT_SECRET`), so a missing `.env` still runs.

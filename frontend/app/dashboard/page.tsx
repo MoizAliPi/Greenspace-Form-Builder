@@ -4,7 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { ApiError } from "@/lib/api";
+import { ErrorAlert } from "@/components/error-alert";
+import { getErrorMessage } from "@/lib/error-message";
 import { useAuth } from "@/lib/auth-context";
 import { createForm, listMyForms } from "@/lib/forms-api";
 
@@ -26,12 +27,9 @@ export default function DashboardPage() {
     },
   });
 
-  const createError =
-    createMutation.error instanceof ApiError
-      ? createMutation.error.message
-      : createMutation.error
-        ? "Could not create form."
-        : null;
+  const createError = createMutation.error
+    ? getErrorMessage(createMutation.error, "Could not create form.")
+    : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-4 py-10">
@@ -63,11 +61,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {createError && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {createError}
-        </p>
-      )}
+      <ErrorAlert message={createError} />
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-foreground">Your forms</h2>
@@ -75,11 +69,9 @@ export default function DashboardPage() {
           <p className="text-sm text-muted-foreground">Loading forms…</p>
         )}
         {listQuery.isError && (
-          <p className="text-sm text-destructive">
-            {listQuery.error instanceof ApiError
-              ? listQuery.error.message
-              : "Could not load forms."}
-          </p>
+          <ErrorAlert
+            message={getErrorMessage(listQuery.error, "Could not load forms.")}
+          />
         )}
         {listQuery.data && listQuery.data.items.length === 0 && (
           <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
@@ -89,16 +81,28 @@ export default function DashboardPage() {
         {listQuery.data && listQuery.data.items.length > 0 && (
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
             {listQuery.data.items.map((form) => (
-              <li key={form.id}>
+              <li
+                key={form.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-accent/50"
+              >
                 <Link
                   href={`/dashboard/builder/${form.id}`}
-                  className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-accent/50"
+                  className="font-medium text-foreground hover:underline"
                 >
-                  <span className="font-medium text-foreground">{form.title}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {form.status === "published" ? "Published" : "Draft"} · /{form.slug}
-                  </span>
+                  {form.title}
                 </Link>
+                <div className="flex shrink-0 items-center gap-3">
+                  <Link
+                    href={`/dashboard/forms/${form.id}/responses`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Responses
+                  </Link>
+                  <span className="text-xs text-muted-foreground">
+                    {form.status === "published" ? "Published" : "Draft"} · /
+                    {form.slug}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>

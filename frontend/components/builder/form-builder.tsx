@@ -6,7 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { FieldConfigEditor } from "@/components/builder/field-config-editor";
 import { SortableFieldList } from "@/components/builder/sortable-field-list";
-import { ApiError } from "@/lib/api";
+import { ErrorAlert } from "@/components/error-alert";
+import { getErrorMessage } from "@/lib/error-message";
 import {
   createNewField,
   FIELD_PALETTE,
@@ -72,11 +73,14 @@ export function FormBuilder({ formId }: Props) {
     onSuccess: (updated) => {
       queryClient.setQueryData(["forms", formId], updated);
       queryClient.invalidateQueries({ queryKey: ["forms", "list"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["forms", formId, "responses"],
+      });
       setDraft(formReadToDraft(updated));
       setError(null);
     },
     onError: (e) => {
-      setError(e instanceof ApiError ? e.message : "Could not save form.");
+      setError(getErrorMessage(e, "Could not save form."));
     },
   });
 
@@ -85,11 +89,14 @@ export function FormBuilder({ formId }: Props) {
     onSuccess: (updated) => {
       queryClient.setQueryData(["forms", formId], updated);
       queryClient.invalidateQueries({ queryKey: ["forms", "list"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["forms", formId, "responses"],
+      });
       setDraft(formReadToDraft(updated));
       setError(null);
     },
     onError: (e) => {
-      setError(e instanceof ApiError ? e.message : "Could not update publish status.");
+      setError(getErrorMessage(e, "Could not update publish status."));
     },
   });
 
@@ -157,11 +164,9 @@ export function FormBuilder({ formId }: Props) {
   if (query.isError) {
     return (
       <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
-        <p className="text-destructive">
-          {query.error instanceof ApiError
-            ? query.error.message
-            : "Could not load this form."}
-        </p>
+        <ErrorAlert
+          message={getErrorMessage(query.error, "Could not load this form.")}
+        />
         <Link
           href="/dashboard"
           className="mt-4 inline-block text-sm text-primary underline"
@@ -234,6 +239,12 @@ export function FormBuilder({ formId }: Props) {
           >
             {saveMutation.isPending ? "Saving…" : "Save"}
           </button>
+          <Link
+            href={`/dashboard/forms/${formId}/responses`}
+            className="rounded-md border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
+          >
+            Responses
+          </Link>
           {draft.status === "published" && (
             <Link
               href={`/f/${formId}`}
@@ -247,11 +258,7 @@ export function FormBuilder({ formId }: Props) {
         </div>
       </div>
 
-      {error && (
-        <p className="mb-4 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <ErrorAlert message={error} className="mb-4" />
 
       <div className="mb-6 grid gap-4 rounded-lg border border-border bg-card p-4 shadow-sm sm:grid-cols-2">
         <div>

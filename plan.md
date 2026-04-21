@@ -329,8 +329,8 @@ For field typing, prefer discriminated unions in Pydantic and matching TypeScrip
 - [x] **Todo 5 — Local auth (JWT)** Backend: `POST/GET /api/v1/auth/register|login|me`, bcrypt passwords, HS256 JWT (`core/security.py`, `core/auth.py`). Frontend: `/login` and `/signup` (or combined page), persist token, attach Bearer token to creator API calls, optional route guards.
 - [x] **Todo 6 — Form builder UI** Builder page: field palette (all 8 types), field editor, `@dnd-kit` reorder, save/publish toggle. Wired to `PUT /forms/{id}`.
 - [x] **Todo 7 — Public form renderer** Public form page with correct control for each of the 8 field types. Client-side validation + `POST /forms/{id}/submit`. Success/error states.
-- **Todo 8 — Responses dashboard** Responses page: paginated table, readable answer rendering for all field types (address, date formatted correctly).
-- **Todo 9 — Harden** Consistent error UX, ruff + pytest passing, eslint + tsc passing.
+- [x] **Todo 8 — Responses dashboard** Responses page: paginated table, readable answer rendering for all field types (address, date formatted correctly).
+- [x] **Todo 9 — Harden** Consistent error UX, ruff + pytest passing, eslint + tsc passing.
 
 ## Quality and testing
 

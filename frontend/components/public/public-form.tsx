@@ -4,8 +4,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PublicFieldInput } from "@/components/public/public-field-input";
+import { ErrorAlert } from "@/components/error-alert";
 import { ApiError } from "@/lib/api";
 import { sortFieldsByOrder } from "@/lib/builder/form-model";
+import { getErrorMessage } from "@/lib/error-message";
 import { buildSubmitAnswers } from "@/lib/public-form/answers";
 import { validateFieldValue } from "@/lib/public-form/validate";
 import { getFormForViewer, submitForm } from "@/lib/forms-api";
@@ -58,7 +60,7 @@ export function PublicForm({ formId }: Props) {
   useEffect(() => {
     if (!formQuery.data) return;
     setValues(initialValuesForFields(formQuery.data.fields));
-  }, [formQuery.data?.id]);
+  }, [formQuery.data]);
 
   const setFieldValue = useCallback((fieldId: string, next: unknown) => {
     setValues((prev) => ({ ...prev, [fieldId]: next }));
@@ -89,9 +91,7 @@ export function PublicForm({ formId }: Props) {
       setSubmitError(null);
     },
     onError: (e) => {
-      setSubmitError(
-        e instanceof ApiError ? e.message : "Something went wrong. Try again."
-      );
+      setSubmitError(getErrorMessage(e, "Something went wrong. Try again."));
     },
   });
 
@@ -112,17 +112,14 @@ export function PublicForm({ formId }: Props) {
 
   if (formQuery.isError) {
     const err = formQuery.error;
-    const msg =
-      err instanceof ApiError && err.message
-        ? err.message
-        : "This form could not be loaded.";
+    const msg = getErrorMessage(err, "This form could not be loaded.");
     const hint =
       err instanceof ApiError && err.status === 404
         ? "For visitors, the form must be published. The URL must use the form ID from the builder (UUID), not the slug."
         : "It may be unpublished or the link may be incorrect.";
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-destructive">{msg}</p>
+        <ErrorAlert message={msg} />
         <p className="mt-2 text-sm text-muted-foreground">{hint}</p>
       </div>
     );
@@ -166,11 +163,7 @@ export function PublicForm({ formId }: Props) {
           ))
         )}
 
-        {submitError && (
-          <p className="text-sm text-destructive" role="alert">
-            {submitError}
-          </p>
-        )}
+        <ErrorAlert message={submitError} />
 
         <button
           type="submit"

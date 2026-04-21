@@ -6,6 +6,7 @@ import type {
   FormSubmit,
   FormUpdate,
   ResponseRead,
+  ResponsesRead,
 } from "@/types/api";
 
 export async function listMyForms(params?: {
@@ -52,4 +53,17 @@ export async function updateForm(
   body: FormUpdate
 ): Promise<FormRead> {
   return apiFetch<FormRead>(`/forms/${formId}`, { method: "PUT", body });
+}
+
+export async function listFormResponses(
+  formId: string,
+  params?: { limit?: number; offset?: number }
+): Promise<ResponsesRead> {
+  const sp = new URLSearchParams();
+  if (params?.limit != null) sp.set("limit", String(params.limit));
+  if (params?.offset != null) sp.set("offset", String(params.offset));
+  const q = sp.toString();
+  return apiFetch<ResponsesRead>(
+    `/forms/${formId}/responses${q ? `?${q}` : ""}`
+  );
 }

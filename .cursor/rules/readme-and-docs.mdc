@@ -118,11 +118,12 @@ Given more time, I'd prioritize:
 
 \`\`\`bash
 # backend/.env.example
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/formbuilder
+DATABASE_URL=sqlite+aiosqlite:///./formbuilder.db
 CORS_ORIGINS=["http://localhost:3000"]
+JWT_SECRET=replace-with-a-long-random-secret-at-least-32-chars
 
 # frontend/.env.local.example
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:8000
 \`\`\`
 ```
 

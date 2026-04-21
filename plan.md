@@ -27,7 +27,7 @@ flowchart LR
   Browser[Browser]
   Web[Next.js Frontend]
   API[FastAPI Backend]
-  DB[(Supabase Postgres)]
+  DB[(SQLite / file DB)]
 
   Browser --> Web
   Web -->|REST + CORS| API
@@ -44,7 +44,7 @@ Frontend stack:
 - shadcn/ui
 - TanStack Query
 - `@dnd-kit` for builder reordering
-- Supabase Auth for creator login
+- Email/password auth against the FastAPI API (JWT in `Authorization` header)
 
 Backend stack:
 
@@ -52,8 +52,8 @@ Backend stack:
 - Pydantic v2
 - async SQLAlchemy 2.x
 - Alembic migrations
-- Supabase Postgres
-- Supabase JWT verification for protected routes
+- SQLite by default (`sqlite+aiosqlite`); portable JSON columns
+- HS256 JWT verification for protected routes (`JWT_SECRET`)
 
 ## Repository layout
 
@@ -185,7 +185,14 @@ Suggested config examples:
 
 ## Data model
 
-Start with three main tables and JSONB answers for speed of delivery.
+Start with a `users` table for creators plus three main tables and JSON answers for speed of delivery.
+
+### `users`
+
+- `id`
+- `email` (unique)
+- `password_hash`
+- `created_at`
 
 ### `forms`
 
@@ -234,7 +241,7 @@ Structure the API into clear layers:
 - `services/` for business rules
 - `repositories/` for database access
 - `schemas/` for request and response contracts
-- `core/auth.py` for Supabase JWT verification
+- `core/security.py` + `core/auth.py` for password hashing and JWT verification
 
 Key backend responsibilities:
 
@@ -307,7 +314,7 @@ For field typing, prefer discriminated unions in Pydantic and matching TypeScrip
 2. Add backend database models, Alembic, and initial migrations.
 3. Implement Pydantic schemas for forms, fields, and submissions.
 4. Implement protected and public API routes with owner checks.
-5. Add Supabase Auth to the frontend and JWT verification to the backend.
+5. Add login/register UI to the frontend and wire `Authorization: Bearer` on API calls (backend JWT already implemented).
 6. Build the minimal builder UI with add/edit/reorder/save flows.
 7. Build the public form renderer for the eight MVP input types.
 8. Build the responses dashboard with pagination.
@@ -316,10 +323,10 @@ For field typing, prefer discriminated unions in Pydantic and matching TypeScrip
 ## Todo list
 
 - [x] **Todo 1 — Scaffold** `backend/` and `frontend/` with all dependencies, configs, and boilerplate. No feature code — just a runnable skeleton for both apps.
-- **Todo 2 — Database models + Alembic** SQLAlchemy async models for `forms`, `fields`, `responses`. Initial Alembic migration. No routes yet.
+- [x] **Todo 2 — Database models + Alembic** SQLAlchemy async models for `forms`, `fields`, `responses`. Initial Alembic migration. No routes yet.
 - **Todo 3 — Pydantic schemas** All request/response schemas for forms, fields, and submissions. TypeScript mirror types in `frontend/types/`. No route changes.
 - **Todo 4 — API routes** Layered routers/services/repositories for all five endpoints. Auth stubs (owner check ready but JWT not yet wired). Tests for all routes.
-- **Todo 5 — Supabase Auth** Supabase JWT verification in `backend/core/auth.py`. Next.js `@supabase/ssr` wrappers + `middleware.ts` + `/login` and `/signup` pages. Protected routes enforced end-to-end.
+- **Todo 5 — Local auth (JWT)** Backend: `POST/GET /api/v1/auth/register|login|me`, bcrypt passwords, HS256 JWT (`core/security.py`, `core/auth.py`). Frontend: `/login` and `/signup` (or combined page), persist token, attach Bearer token to creator API calls, optional route guards.
 - **Todo 6 — Form builder UI** Builder page: field palette (all 8 types), field editor, `@dnd-kit` reorder, save/publish toggle. Wired to `PUT /forms/{id}`.
 - **Todo 7 — Public form renderer** Public form page with correct control for each of the 8 field types. Client-side validation + `POST /forms/{id}/submit`. Success/error states.
 - **Todo 8 — Responses dashboard** Responses page: paginated table, readable answer rendering for all field types (address, date formatted correctly).
@@ -351,14 +358,12 @@ Important test coverage:
 Frontend:
 
 - `NEXT_PUBLIC_API_URL`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 Backend:
 
 - `DATABASE_URL`
 - `CORS_ORIGINS`
-- `SUPABASE_JWT_SECRET`
+- `JWT_SECRET`
 
 ## Phase 2 ideas
 

@@ -1,27 +1,28 @@
 # Form Builder
 
-A Typeform-style form builder with a **Next.js** frontend and a **FastAPI** backend, backed by **Supabase Postgres**.
+A Typeform-style form builder with a **Next.js** frontend and a **FastAPI** backend. The default stack for local development uses **SQLite** on disk and **JWT-based auth** issued by the API (no external database or auth provider required for reviewers).
 
 ## Why This Stack
 
-FastAPI gives us async-first Python, auto-generated Swagger docs, and Pydantic schemas that become the single source of truth for wire types. Next.js App Router lets us keep the builder and dashboard as client-heavy pages while serving the public form as a server component. JSONB in Postgres keeps field config flexible without a migration for every new field type.
+FastAPI gives us async-first Python, auto-generated Swagger docs, and Pydantic schemas that become the single source of truth for wire types. Next.js App Router lets us keep the builder and dashboard as client-heavy pages while serving the public form as a server component. JSON columns keep field config flexible without a migration for every new field type.
 
 ## Features
 
 - [ ] Form builder with drag-and-drop field reordering
 - [ ] Field types: short text, long text, email, phone number, checkbox, yes/no, address, date of birth
-- [ ] Authenticated creators (Supabase email + password)
+- [ ] Authenticated creators (email + password via API JWT)
 - [ ] Public form view for respondents
 - [ ] Response collection and paginated dashboard
 - [ ] Auto-generated API docs at `/docs`
 
 ## Data Model
 
-| Table | Purpose |
-|---|---|
-| `forms` | Form metadata — title, slug, status, owner |
-| `fields` | Ordered fields with JSONB config per type |
-| `responses` | One row per submission, JSONB answers |
+| Table       | Purpose                                              |
+| ----------- | ---------------------------------------------------- |
+| `users`     | Creators — email + password hash                     |
+| `forms`     | Form metadata — title, slug, status, `owner_id` → users |
+| `fields`    | Ordered fields with JSON `config` per type         |
+| `responses` | One row per submission, JSON `answers`             |
 
 ## Local Setup
 
@@ -29,7 +30,6 @@ FastAPI gives us async-first Python, auto-generated Swagger docs, and Pydantic s
 
 - Python 3.12+
 - Node.js 20+
-- PostgreSQL (or Supabase project)
 
 ### Backend
 
@@ -37,9 +37,16 @@ FastAPI gives us async-first Python, auto-generated Swagger docs, and Pydantic s
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env   # fill in DATABASE_URL and SUPABASE_JWT_SECRET
+cp .env.example .env   # optional: set JWT_SECRET for non-local sharing
+alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
+
+By default the API uses `DATABASE_URL=sqlite+aiosqlite:///./formbuilder.db` (file created next to the working directory). Auth endpoints:
+
+- `POST /api/v1/auth/register` — create account, returns JWT
+- `POST /api/v1/auth/login` — returns JWT
+- `GET /api/v1/auth/me` — `Authorization: Bearer <token>`
 
 API docs: http://localhost:8000/docs
 
@@ -48,7 +55,7 @@ API docs: http://localhost:8000/docs
 ```bash
 cd frontend
 npm install
-cp .env.local.example .env.local   # fill in Supabase keys
+cp .env.local.example .env.local   # optional; defaults match local API
 npm run dev
 ```
 
@@ -67,7 +74,7 @@ pytest tests/ -v
 form-builder/
 ├── backend/               # FastAPI + SQLAlchemy
 │   ├── app/
-│   │   ├── core/          # config, auth, errors
+│   │   ├── core/          # config, security, auth deps, errors
 │   │   ├── db/            # engine, session, Base
 │   │   ├── models/        # SQLAlchemy ORM models
 │   │   ├── schemas/       # Pydantic request/response schemas
@@ -88,12 +95,12 @@ form-builder/
 
 ```bash
 # backend/.env
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/formbuilder
+DATABASE_URL=sqlite+aiosqlite:///./formbuilder.db
 CORS_ORIGINS=["http://localhost:3000"]
-SUPABASE_JWT_SECRET=your-supabase-jwt-secret
+JWT_SECRET=replace-with-a-long-random-secret-at-least-32-chars
 
 # frontend/.env.local
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
+
+The default `JWT_SECRET` in `app/core/config.py` is for local development only; set a strong secret when deploying or sharing an environment.

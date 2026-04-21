@@ -1,3 +1,6 @@
-// Auth middleware will be wired in Todo 5 (Supabase Auth).
-// Placeholder to reserve the file location.
-export { } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
+// Auth middleware will be fully wired in Todo 5 (Supabase Auth).
+export function middleware(_request: NextRequest): NextResponse {
+  return NextResponse.next();
+}

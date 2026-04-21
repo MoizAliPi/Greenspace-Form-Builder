@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-import pytest
+import os
+
+# Ensure settings load with test-safe secrets before any `app` import.
+os.environ.setdefault("JWT_SECRET", "test-jwt-secret-key-minimum-32-characters-long")
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine

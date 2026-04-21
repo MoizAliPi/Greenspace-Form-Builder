@@ -80,6 +80,21 @@ export function FormBuilder({ formId }: Props) {
     },
   });
 
+  const statusMutation = useMutation({
+    mutationFn: (status: FormStatus) => updateForm(formId, { status }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["forms", formId], updated);
+      queryClient.invalidateQueries({ queryKey: ["forms", "list"] });
+      setDraft(formReadToDraft(updated));
+      setError(null);
+    },
+    onError: (e) => {
+      setError(e instanceof ApiError ? e.message : "Could not update publish status.");
+    },
+  });
+
+  const isBusy = saveMutation.isPending || statusMutation.isPending;
+
   const replaceField = useCallback((next: FieldRead) => {
     setDraft((d) => {
       if (!d) return d;
@@ -173,36 +188,62 @@ export function FormBuilder({ formId }: Props) {
             Form builder
           </h1>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              setDraft((d) =>
-                d
-                  ? {
-                      ...d,
-                      status: d.status === "published" ? "draft" : "published",
-                    }
-                  : d
-              )
-            }
-            className={cn(
-              "rounded-md border px-4 py-2 text-sm font-medium",
-              draft.status === "published"
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-secondary text-secondary-foreground"
-            )}
-          >
-            {draft.status === "published" ? "Published" : "Draft"}
-          </button>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-3">
+            <span
+              id="publish-toggle-label"
+              className="text-sm font-medium text-foreground"
+            >
+              Published
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draft.status === "published"}
+              aria-labelledby="publish-toggle-label"
+              disabled={isBusy}
+              onClick={() =>
+                statusMutation.mutate(
+                  draft.status === "published" ? "draft" : "published"
+                )
+              }
+              className={cn(
+                "relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                draft.status === "published" ? "bg-primary" : "bg-muted",
+                isBusy && "cursor-not-allowed opacity-60"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-6 w-6 rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out",
+                  draft.status === "published"
+                    ? "translate-x-5"
+                    : "translate-x-0.5"
+                )}
+              />
+            </button>
+            <span className="text-xs text-muted-foreground">
+              {draft.status === "published" ? "Live" : "Draft only"}
+            </span>
+          </div>
           <button
             type="button"
             onClick={handleSave}
-            disabled={saveMutation.isPending}
+            disabled={isBusy}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {saveMutation.isPending ? "Saving…" : "Save"}
           </button>
+          {draft.status === "published" && (
+            <Link
+              href={`/f/${formId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
+            >
+              Open public form
+            </Link>
+          )}
         </div>
       </div>
 

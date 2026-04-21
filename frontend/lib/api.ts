@@ -22,6 +22,16 @@ function extractMessage(detail: unknown): string | undefined {
   if (detail && typeof detail === "object" && "detail" in detail) {
     return extractMessage((detail as { detail: unknown }).detail);
   }
+  if (
+    detail &&
+    typeof detail === "object" &&
+    "error" in detail &&
+    (detail as { error: unknown }).error &&
+    typeof (detail as { error: { message?: unknown } }).error === "object"
+  ) {
+    const msg = (detail as { error: { message?: unknown } }).error.message;
+    if (typeof msg === "string" && msg.length > 0) return msg;
+  }
   if (Array.isArray(detail) && detail.length > 0) {
     const first = detail[0];
     if (first && typeof first === "object" && "msg" in first) {

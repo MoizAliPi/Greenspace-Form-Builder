@@ -3,7 +3,9 @@ import type {
   FormCreate,
   FormRead,
   FormsListRead,
+  FormSubmit,
   FormUpdate,
+  ResponseRead,
 } from "@/types/api";
 
 export async function listMyForms(params?: {
@@ -23,6 +25,26 @@ export async function createForm(body: FormCreate): Promise<FormRead> {
 
 export async function getForm(formId: string): Promise<FormRead> {
   return apiFetch<FormRead>(`/forms/${formId}`);
+}
+
+/**
+ * Load a form for viewing (builder preview or public fill page).
+ * Sends `Authorization` when a token exists so the **owner** can load a **draft**;
+ * anonymous requests only receive **published** forms (see backend `get_form` ACL).
+ */
+export async function getFormForViewer(formId: string): Promise<FormRead> {
+  return apiFetch<FormRead>(`/forms/${formId}`);
+}
+
+export async function submitForm(
+  formId: string,
+  body: FormSubmit
+): Promise<ResponseRead> {
+  return apiFetch<ResponseRead>(`/forms/${formId}/submit`, {
+    method: "POST",
+    body,
+    skipAuth: true,
+  });
 }
 
 export async function updateForm(
